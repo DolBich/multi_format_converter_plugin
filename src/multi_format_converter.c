@@ -65,29 +65,3 @@ FFI_EXPORT int convert_to_pdf(const char *source_path, const char *target_pdf_pa
     fz_drop_context(ctx);
     return 0; // Успех!
 }
-
-// Заглушка для линковщика cmark-gfm
-void cmark_gfm_core_extensions_ensure_registered(void) {}
-
-// Заглушка для линковщика PDF JS
-void pdf_drop_js(struct fz_context *ctx, struct pdf_document *doc) {}
-
-// Заглушки для баркодов
-void *barcode_create(void) { return NULL; }
-void *barcode_decode_from_samples(void) { return NULL; }
-
-// ЗАГЛУШКА ДЛЯ МОСТА HARFBUZZ/FREETYPE
-void *fzhb_ft_font_create(void *ctx, void *face, void *font) { return NULL; }
-
-// Заглушки отсутствующих древних классов FreeType
-void *autofit_module_class = NULL;
-void *t1_driver_class = NULL;
-void *t1cid_driver_class = NULL;
-void *pfr_driver_class = NULL;
-void *t42_driver_class = NULL;
-void *winfnt_driver_class = NULL;
-void *pcf_driver_class = NULL;
-void *bdf_driver_class = NULL;
-void *ft_sdf_renderer_class = NULL;
-void *ft_bitmap_sdf_renderer_class = NULL;
-void *ft_svg_renderer_class = NULL;
