@@ -30,9 +30,7 @@ void main(List<String> args) async {
     // ----------------------------------------------------------
 
     final buildDir = Directory.fromUri(
-      input.packageRoot.resolve(
-        '.dart_tool/native_assets_builder/mupdf_build/',
-      ),
+        input.outputDirectory.resolve('mupdf_build/')
     );
 
     if (buildDir.existsSync()) {
@@ -83,8 +81,9 @@ void main(List<String> args) async {
       '-B',
       buildDir.path,
       '-DCMAKE_TOOLCHAIN_FILE=$toolchainPath',
-      '-DCMAKE_C_COMPILER=$compilerPath',
-      '-DANDROID_NATIVE_API_LEVEL=${codeConfig.android.targetNdkApi}',
+      '-DCMAKE_SYSTEM_NAME=Android',
+      '-DCMAKE_SYSTEM_VERSION=${codeConfig.android.targetNdkApi}',
+      '-DCMAKE_ANDROID_NDK=$ndkPath',
     ];
 
     final abiString =
@@ -99,7 +98,7 @@ void main(List<String> args) async {
     }
 
     cmakeArgs.add(
-      '-DCMAKE_ANDROID_ARCH_ABI=$cmakeAbi',
+      '-DANDROID_ABI=$cmakeAbi',
     );
 
     // ----------------------------------------------------------
