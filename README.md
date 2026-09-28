@@ -1,49 +1,84 @@
-# multi_format_converter_plugin
+# Multi Format Converter Plugin
 
-A new Dart FFI package project.
+A Flutter plugin for converting multiple document formats to PDF using a native MuPDF-based implementation.
 
-## Getting Started
+## Overview
 
-This project is a starting point for a Flutter
-[FFI package](https://flutter.dev/to/ffi-package),
-a specialized package that includes native code directly invoked with Dart FFI.
+`multi_format_converter_plugin` integrates native document conversion into Flutter through Dart FFI.
 
-## Project structure
+The plugin provides a Dart API for converting supported document formats to PDF while keeping the conversion logic in native code.
 
-This template uses the following structure:
+## Supported Formats
 
-* `src`: Contains the native source code, and a CmakeFile.txt file for building
-  that source code into a dynamic library.
+The native converter is currently designed to support formats such as:
 
-* `lib`: Contains the Dart code that defines the API of the plugin, and which
-  calls into the native code using `dart:ffi`.
+* DOCX
+* EPUB
+* FB2
+* Markdown
+* SVG
+* XPS
+* CBZ
 
-* `bin`: Contains the `build.dart` that performs the external native builds.
+## How It Works
 
-## Building and bundling native code
+The plugin uses:
 
-`build.dart` does the building of native components.
+* **Dart FFI** to communicate with native code
+* **C** for the native conversion layer
+* **CMake** to build the native library
+* **Android NDK** for Android native compilation
+* **Flutter native assets / dynamic libraries** for packaging the native component
 
-Bundling is done by Flutter based on the output from `build.dart`.
+At runtime, Dart loads the native library, resolves the conversion function, passes the input data through the FFI boundary, and receives the conversion result.
 
-## Binding to native code
+## Project Structure
 
-To use the native code, bindings in Dart are needed.
-To avoid writing these by hand, they are generated from the header file
-(`src/multi_format_converter_plugin.h`) by `package:ffigen`.
-Regenerate the bindings by running `dart run ffigen --config ffigen.yaml`.
+```text
+lib/
+└── multi_format_converter_plugin.dart
 
-## Invoking native code
+src/
+├── CMakeLists.txt
+└── multi_format_converter.c
 
-Very short-running native functions can be directly invoked from any isolate.
-For example, see `sum` in `lib/multi_format_converter_plugin.dart`.
+hook/
+└── build.dart
+```
 
-Longer-running functions should be invoked on a helper isolate to avoid
-dropping frames in Flutter applications.
-For example, see `sumAsync` in `lib/multi_format_converter_plugin.dart`.
+## Technical Highlights
 
-## Flutter help
+The project demonstrates:
 
-For help getting started with Flutter, view our
-[online documentation](https://docs.flutter.dev), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+* Dart ↔ C interoperability through FFI
+* Native memory management across the FFI boundary
+* Dynamic library loading and symbol lookup
+* Native asset bundling for Flutter
+* Cross-platform native build integration
+* Integration of a third-party native document engine
+* Automated native compilation through a Flutter build hook
+
+## Usage
+
+```dart
+final result = await MultiFormatConverterPlugin.convertToPdf(
+  inputPath: '/path/to/input.docx',
+  outputPath: '/path/to/output.pdf',
+);
+```
+
+> API details may change while the plugin is being prepared for publication on pub.dev.
+
+## Status
+
+This project is currently under development and is being prepared for publication on [pub.dev](https://pub.dev/).
+
+## License
+
+The original code in this repository is licensed under the MIT License.
+
+See [LICENSE](LICENSE) for details.
+
+### Third-party components
+
+This project integrates third-party software, including MuPDF, which is subject to its own licensing terms. Third-party licenses and notices apply separately from the license of this repository's original code.
