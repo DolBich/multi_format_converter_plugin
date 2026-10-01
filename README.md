@@ -1,84 +1,166 @@
-# Multi Format Converter Plugin
+# Multi Format Converter
 
-A Flutter plugin for converting multiple document formats to PDF using a native MuPDF-based implementation.
+A Flutter plugin that converts multiple document formats to PDF on-device using MuPDF and Dart FFI.
 
-## Overview
+The package was created as a native conversion layer for [SimpleReader](https://github.com/DolBich), an Android-first offline reading application. The goal is to support additional document formats without building a separate reader UI and renderer for every format.
 
-`multi_format_converter_plugin` integrates native document conversion into Flutter through Dart FFI.
+## Why this package exists
 
-The plugin provides a Dart API for converting supported document formats to PDF while keeping the conversion logic in native code.
+SimpleReader is designed to work offline. Supporting every input format directly in the reader would require separate rendering pipelines and platform-specific implementations.
 
-## Supported Formats
-
-The native converter is currently designed to support formats such as:
-
-* DOCX
-* EPUB
-* FB2
-* Markdown
-* SVG
-* XPS
-* CBZ
-
-## How It Works
-
-The plugin uses:
-
-* **Dart FFI** to communicate with native code
-* **C** for the native conversion layer
-* **CMake** to build the native library
-* **Android NDK** for Android native compilation
-* **Flutter native assets / dynamic libraries** for packaging the native component
-
-At runtime, Dart loads the native library, resolves the conversion function, passes the input data through the FFI boundary, and receives the conversion result.
-
-## Project Structure
+Instead, the application can normalize supported documents into a single format:
 
 ```text
-lib/
-└── multi_format_converter_plugin.dart
-
-src/
-├── CMakeLists.txt
-└── multi_format_converter.c
-
-hook/
-└── build.dart
+Input document
+      ↓
+Native conversion
+      ↓
+PDF
+      ↓
+Shared PDF reader
 ```
 
-## Technical Highlights
+This allows the reader UI to remain focused on a single rendering format while document conversion stays isolated in a reusable package.
 
-The project demonstrates:
+Two alternatives were considered but did not fit the application's goals:
 
-* Dart ↔ C interoperability through FFI
-* Native memory management across the FFI boundary
-* Dynamic library loading and symbol lookup
-* Native asset bundling for Flutter
-* Cross-platform native build integration
-* Integration of a third-party native document engine
-* Automated native compilation through a Flutter build hook
+- **Online conversion** would require uploading documents to an external service and would break the application's offline-first approach.
+- **Using an office application installed on the device** would make the reader dependent on external software and prevent it from being fully self-contained.
 
-## Usage
+## Technical Approach
 
-```dart
-final result = await MultiFormatConverterPlugin.convertToPdf(
-  inputPath: '/path/to/input.docx',
-  outputPath: '/path/to/output.pdf',
-);
+The package combines Flutter FFI, Flutter native asset build hooks, CMake, the Android NDK and MuPDF.
+
+```text
+Flutter / Dart
+      ↓
+      FFI
+      ↓
+Native Asset Build Hook
+      ↓
+    CMake
+      ↓
+ Android NDK
+      ↓
+  C wrapper
+      ↓
+    MuPDF
+      ↓
+      PDF
 ```
 
-> API details may change while the plugin is being prepared for publication on pub.dev.
+### Dart FFI
 
-## Status
+The Dart API exposes native conversion functionality through FFI, allowing the Flutter application to call the native converter without introducing an additional Kotlin/JNI bridge.
 
-This project is currently under development and is being prepared for publication on [pub.dev](https://pub.dev/).
+### Native build pipeline
 
-## License
+A custom build hook configures and builds the native library as part of the Flutter package build process.
 
-The original code in this repository is licensed under the MIT License.
+The build step:
 
-See [LICENSE](LICENSE) for details.
+- obtains the compiler configuration from Flutter Native Assets;
+- detects the Android target ABI;
+- configures CMake;
+- builds the required MuPDF components;
+- builds the custom native wrapper;
+- registers the resulting native asset.
 
-### Third-party components
+This keeps the native dependency integrated into the package rather than requiring a prebuilt `.so` to be checked into the repository.
 
-This project integrates third-party software, including MuPDF, which is subject to its own licensing terms. Third-party licenses and notices apply separately from the license of this repository's original code.
+### C wrapper around MuPDF
+
+A small C wrapper provides the conversion boundary used by Dart FFI.
+
+The native conversion flow is:
+
+```text
+Input file
+    ↓
+MuPDF document open
+    ↓
+Page-by-page processing
+    ↓
+PDF document writer
+    ↓
+Output PDF
+```
+
+## Custom MuPDF Build
+
+MuPDF supports a broad set of document formats. The package configures the native build to include the formats relevant to the planned reader while excluding components that are not needed by the converter.
+
+This reduces unnecessary native build content and keeps the resulting package focused on document conversion.
+
+## Current Status
+
+**Work in progress.**
+
+The native conversion pipeline is implemented and the package can be used as a standalone Flutter plugin, but format compatibility is still being validated.
+
+At the current stage:
+
+- the package is implemented for **Android**;
+- **DOCX conversion has been tested**, but the current result still requires improvement;
+- other configured formats have not yet been fully validated;
+- the package has not yet been integrated into SimpleReader;
+- future iOS support is planned;
+- the package is intended to be published to **pub.dev** after further development and testing.
+
+## Why FFI + Native Assets
+
+The package intentionally keeps the native converter behind a platform-independent Dart API.
+
+This approach allows the native implementation to evolve separately from the Flutter UI and leaves room for adding other platform implementations later, including iOS.
+
+The native build is also configured through Flutter's build-hook mechanism rather than requiring platform-specific wrapper code for each call from Dart.
+
+<details>
+<summary>More technical details</summary>
+
+### Build configuration
+
+The native build uses a custom CMake configuration to selectively include the required MuPDF components.
+
+The package also relies on the Android NDK to compile the native code for the target ABI.
+
+### Error handling
+
+The current Dart API only needs to know whether conversion succeeded or failed, so the native layer currently exposes a compact success/failure result.
+
+The error model can be expanded later without changing the overall FFI architecture.
+
+</details>
+
+## Planned Use in SimpleReader
+
+The intended integration is:
+
+```text
+SimpleReader
+   ├── PDF → open directly
+   ├── supported book/document format
+   │        ↓
+   │   Multi Format Converter
+   │        ↓
+   │       PDF
+   │        ↓
+   └── shared PDF reading pipeline
+```
+
+The package is being developed as a reusable building block for this architecture rather than as a standalone end-user application.
+
+## Tech Stack
+
+- **Dart**
+- **Flutter**
+- **Dart FFI**
+- **Flutter Native Assets / build hooks**
+- **C**
+- **CMake**
+- **Android NDK**
+- **MuPDF**
+
+## Development Status
+
+This repository represents an ongoing implementation. The architecture and native build pipeline are in place, while broader format validation, integration with SimpleReader, and future platform support are still planned.
